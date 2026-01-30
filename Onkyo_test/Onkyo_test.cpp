@@ -8,7 +8,7 @@
 //
 //---------------------------------------------------------------------------
 
-#include "wiringPi.h"
+#include "Arduino.h"
 
 // UART
 #define UART_SPEED  9600

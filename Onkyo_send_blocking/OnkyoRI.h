@@ -15,20 +15,24 @@
 #ifndef ONKYORI_H
 #define ONKYORI_H 
 
+#include <gpiod.h>
+#include <string>
+
 class OnkyoRI
 {
   public:
-    OnkyoRI() {}; 
-    OnkyoRI(int pin) {  _outputPin = pin; pinMode(_outputPin, OUTPUT);  digitalWrite(_outputPin, LOW); };    
+    OnkyoRI() : _chip(nullptr), _line(nullptr), _lineOffset(0) {};
+    OnkyoRI(int lineOffset, const std::string &chipName);
 
-    ~OnkyoRI() {  };  
+    ~OnkyoRI();
     
     //send command message to device
     void send(int command);   
   
   private:
-    //
-    int _outputPin;
+    gpiod_chip *_chip;
+    gpiod_line *_line;
+    int _lineOffset;
     
     //write message header 
     void writeHeader();
@@ -36,6 +40,9 @@ class OnkyoRI
     void writeBit(bool level);
     //write message footer
     void writeFooter();
+    void setLineValue(int value);
+    void sleepMicros(int micros);
+    void sleepMillis(int millis);
 };
 
 #endif
