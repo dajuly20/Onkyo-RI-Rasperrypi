@@ -1,4 +1,3 @@
-#include <wiringPi.h>
 #include "Onkyo_send_blocking/OnkyoRI.h"
 #include <iostream>
 #include <vector>
@@ -43,16 +42,13 @@ bool file_exists(string filename)
 
 int printHelp(string location)
 {
-    system("gpio readall");
-
-    cout << "\033[1;31mUSE WIRING PI NUMBERS\033[0m\n"
+    cout << "\033[1;31mUSE GPIO LINE OFFSETS (BCM)\033[0m\n"
          << endl;
-    cout << "See WiringPi PINs: https://pinout.xyz/pinout/wiringpi" << endl
-         << "OR: run gpio readall" << endl
-         << "OR: view readme.MD / open img/wiringPi.jpeg" << endl
+    cout << "See BCM GPIOs: https://pinout.xyz/" << endl
+         << "OR: run gpioinfo gpiochip0" << endl
          << endl
          << endl;
-    cout << "Syntax: " << location << " -p <WiringPi-Pin [6]> -c <command(s) [0x20(,0x1A0)]>" << endl;
+    cout << "Syntax: " << location << " -p <GPIO line offset [25]> -c <command(s) [0x20(,0x1A0)]> [-g <gpiochip0>]" << endl;
 
     return EXIT_SUCCESS;
 }
@@ -102,9 +98,10 @@ int main(int argc, char **argv)
     string commands;
     int pin;
     int delay;
+    string chipName = "gpiochip0";
     string s, tmp;
     vector<string> commandsVector;
-    pin = 6;     // Used pin (WiringPiSchema)
+    pin = 25;    // Used pin (BCM line offset)
     delay = 100; // in milliseconds
     // cout << "Args:" << argc << endl;
     if (argc == 1)
@@ -124,6 +121,10 @@ int main(int argc, char **argv)
         {
             pin = std::stoi(*++i, nullptr, 0);
         }
+        else if (*i == "-g")
+        {
+            chipName = *++i;
+        }
         else
         {
             return printHelp(argv[0]);
@@ -138,10 +139,9 @@ int main(int argc, char **argv)
 
     if (aquireLock(lockfile) == EXIT_FAILURE)
         return EXIT_FAILURE;
-    cout << "Using WiringPi Pin: " << pin << endl;
+    cout << "Using GPIO line offset: " << pin << " on " << chipName << endl;
 
-    wiringPiSetup();
-    OnkyoRI ori(pin);
+    OnkyoRI ori(pin, chipName);
 
     for (auto const &commandString : commandsVector)
     {

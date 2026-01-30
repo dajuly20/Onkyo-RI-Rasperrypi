@@ -18,7 +18,7 @@ If you are trying to intigrate this into **NodeRed** go this way [node-red-contr
 ```
 git clone https://github.com/dajuly20/Onkyo-RI-Rasperrypi
 cd Onkyo-RI-Rasperrypi
-./onkyoricli -p <wiringPi pin#> -c 0x20[,0x30]
+./onkyoricli -p <GPIO line offset> -c 0x20[,0x30] [-g gpiochip0]
 ```
 
 The binary should run on everything thats not too far from [Raspberry Pi OS](https://www.raspberrypi.com/software/) 
@@ -30,17 +30,7 @@ Otherwise you will need to build it yourself.
 ## Prerequisits 
 
 ```
-sudo apt update && sudo apt upgrade && sudo apt install -y build-essential gcc g++ make wiringpi
-```
-
-
-If there is no package for wiringpi, build it yourself too:
-```
-git clone https://github.com/wiringpi/wiringpi
-cd wiringPi
-git pull origin
-./build
-cd ..
+sudo apt update && sudo apt upgrade && sudo apt install -y build-essential gcc g++ make libgpiod-dev gpiod
 ```
 
 Now we are ready to build the actual thing
@@ -49,19 +39,19 @@ git clone https://github.com/dajuly20/Onkyo-RI-Rasperrypi
 cd Onkyo-RI-Rasperrypi
 rm onkyoricli
 /build
-/onkyoricli -p <wiringPi pin#> -c 0x20[,0x30]
+/onkyoricli -p <GPIO line offset> -c 0x20[,0x30]
 ```
 
 You need a cable like that: 
 * [3,5 mm Mono Klinkenkabel Verlängerung - 5m ](https://amzn.to/3Srv8tw) *(Amazon affiliate)*
 * Cut off the end
 * Solder a 10kOhms [resistor](https://amzn.to/3WEStKB) between the lines (I put it in the connector)
-* Find the right WiringPi `pinout`
+* Find the right BCM GPIO `pinout`
 
 
 To connect to the RI port a 3.5mm mono jack is used. Tip is for data signal and sleeve is ground (GND). In case of stereo jack, connect tip to DATA, sleeve **and** ring to GND. That means for a Rasperry Pi 3 to put the tip to Pin 22 (GPIO_GEN6) GPIO25 (tx) (which is set as Standart for this node) and the shield to Pin 20 or another ground (Gnd). Please note, the pins can't be connected to UART ( Pin 8 / 9 ). (I didn't try it, so correct me if im worng).
 If you want to use another GPIO, you can specify that later in node red. The connection schema shown below is for a Rasperry Pi 3. 
-If you have Wiring Pi installed you can use ```gpio readall``` 
+If you have libgpiod installed you can use ```gpioinfo gpiochip0```
 
 ```
  Receiver for "Onkyo's RI Interface" (to RS-232, lirc_serial)
@@ -98,11 +88,11 @@ egin remote
 ## Wiring stuff up 
 To connect to the RI port a 3.5mm mono jack is used. Tip is for data signal and sleeve is ground (GND). In case of stereo jack, connect tip to DATA, sleeve **and** ring to GND. That means for a Rasperry Pi 3 to put the tip to Pin 22 (GPIO_GEN6) GPIO25 (tx) (which is set as Standart for this node) and the shield to Pin 20 or another ground (Gnd). Please note, the pins can't be connected to UART ( Pin 8 / 9 ). (I didn't try it, so correct me if im worng).
 If you want to use another GPIO, you can specify that later in node red. The connection schema shown below is for a Rasperry Pi 3. 
-If you have Wiring Pi installed you can use ```gpio readall``` 
+If you have libgpiod installed you can use ```gpioinfo gpiochip0```
 
 
 If you connected the cable as suggested below use ```25```
-If you have another model then look for WiringPi pin numbers rasperry pi xxx. 
+If you have another model then look for BCM GPIO line offsets for your Raspberry Pi.
 
 ![Pi3 Pinout](img/pi3pinout.svg)
 
@@ -177,4 +167,4 @@ If it's just Ri Codes for your Hardware by sending a merge request or write me a
 if you fork the whole thing and make it your own project. Please share your findings! Before you fork though, you can send me a message - I 've seen it often enough to have the same project in 100 different forks / versions on npm / Node Red. Think of DAUs. They won't know which version to install.  
 
 ## Known Issues 
-* WiringPi is kind of outdated... sould go to other lib asap
+* libgpiod access usually requires running as root or configuring udev permissions.
