@@ -12,10 +12,65 @@
 //
 //---------------------------------------------------------------------------
 
-
-#include <wiringPi.h>
 #include "OnkyoRI.h"
-#include <sys/socket.h>
+#include <chrono>
+#include <stdexcept>
+#include <thread>
+
+OnkyoRI::OnkyoRI(int lineOffset, const std::string &chipName)
+    : _chip(nullptr), _line(nullptr), _lineOffset(lineOffset)
+{
+  _chip = gpiod_chip_open_by_name(chipName.c_str());
+  if (!_chip)
+  {
+    throw std::runtime_error("Failed to open GPIO chip: " + chipName);
+  }
+
+  _line = gpiod_chip_get_line(_chip, _lineOffset);
+  if (!_line)
+  {
+    gpiod_chip_close(_chip);
+    throw std::runtime_error("Failed to get GPIO line " + std::to_string(_lineOffset));
+  }
+
+  if (gpiod_line_request_output(_line, "onkyori", 0) != 0)
+  {
+    gpiod_chip_close(_chip);
+    throw std::runtime_error("Failed to request GPIO line output for line " + std::to_string(_lineOffset));
+  }
+}
+
+OnkyoRI::~OnkyoRI()
+{
+  if (_line)
+  {
+    gpiod_line_release(_line);
+    _line = nullptr;
+  }
+  if (_chip)
+  {
+    gpiod_chip_close(_chip);
+    _chip = nullptr;
+  }
+}
+
+void OnkyoRI::setLineValue(int value)
+{
+  if (_line && gpiod_line_set_value(_line, value) != 0)
+  {
+    throw std::runtime_error("Failed to set GPIO line value.");
+  }
+}
+
+void OnkyoRI::sleepMicros(int micros)
+{
+  std::this_thread::sleep_for(std::chrono::microseconds(micros));
+}
+
+void OnkyoRI::sleepMillis(int millis)
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(millis));
+}
 
 /// send command message to device
 ///
@@ -38,10 +93,10 @@ void OnkyoRI::send(int command)
 /// write message header 
 void OnkyoRI::writeHeader()
 {
-  digitalWrite(_outputPin,HIGH);
-  delayMicroseconds(3000);
-  digitalWrite(_outputPin,LOW);
-  delayMicroseconds(1000);
+  setLineValue(1);
+  sleepMicros(3000);
+  setLineValue(0);
+  sleepMicros(1000);
 }
 
 /// write message bit
@@ -50,21 +105,21 @@ void OnkyoRI::writeHeader()
 ///
 void OnkyoRI::writeBit(bool level)
 {
-  digitalWrite(_outputPin,HIGH);
-  delayMicroseconds(1000);  
-  digitalWrite(_outputPin,LOW);
+  setLineValue(1);
+  sleepMicros(1000);
+  setLineValue(0);
     
   if(level)
-    delayMicroseconds(2000); 
+    sleepMicros(2000);
   else
-    delayMicroseconds(1000); 
+    sleepMicros(1000);
 }
 
 /// write message footer
 void OnkyoRI::writeFooter()
 {
-  digitalWrite(_outputPin,HIGH);
-  delayMicroseconds(1000);
-  digitalWrite(_outputPin,LOW);
-  delay(20);
+  setLineValue(1);
+  sleepMicros(1000);
+  setLineValue(0);
+  sleepMillis(20);
 }
